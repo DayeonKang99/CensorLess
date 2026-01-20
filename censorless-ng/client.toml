@@ -1,0 +1,26 @@
+# Censorless Client Configuration Example
+
+# Ed25519 private key (hex-encoded, 32 bytes)
+private_key = "ea213b30466fb14181f45244dc9b3f42ea6497bdbe5197606cb4d707d0f67377"
+# public key is a5ec2ac02f3ca98e9b5299d3732c7aa93d6a1771a3fe7c3c84c16dae9728fc40
+
+# Lambda URL endpoint
+# Dev server from cargo lambda watch
+lambda = "http://localhost:9000/lambda-url/lambda"
+
+# Buffer size threshold - send immediately if pending data reaches this size
+lambda_buffer = 1048576  # 1 MB
+
+# Timeout in milliseconds to wait before sending pending data to lambda
+# Lower values = lower latency, higher lambda costs
+# Higher values = better batching, lower costs
+timeout = 1000  # 1 second
+
+# Idle timeout in milliseconds - close connections after this period of inactivity
+idle_timeout = 300000  # 5 minutes
+
+# Server configurations
+[[servers]]
+public_key = "3fed554a9f79975656af858eaceca5a7ab5f8e34ba9323a550f01c9f843a6d80"
+host = "localhost"
+port = 1337

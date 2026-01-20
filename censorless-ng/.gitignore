@@ -1,0 +1,10 @@
+target
+.terraform
+.terraform.lock.hcl
+result
+CLAUDE.md
+**/.*.sw*
+*.log
+*-aws.toml
+*.tfstate
+*.tfstate.backup

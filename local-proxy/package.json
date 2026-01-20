@@ -1,0 +1,26 @@
+{
+  "private": true,
+  "name": "proxy-agent-monorepo",
+  "packageManager": "pnpm@7.32.2",
+  "scripts": {
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test-e2e": "turbo run test-e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "ci:version": "changeset version && pnpm install --no-frozen-lockfile",
+    "ci:publish": "pnpm publish -r && changeset tag"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.26.1",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-config-turbo": "^1.9.3",
+    "prettier": "^2.8.8",
+    "turbo": "^1.10.8",
+    "semver": "^7.6.3"
+  }
+}

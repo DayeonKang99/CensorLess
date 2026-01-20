@@ -1,0 +1,37 @@
+# Censorless Server Configuration Example
+
+# Ed25519 private key (hex-encoded, 32 bytes)
+private_key = "f0f8e8130b59e49319c4d175ae0fd5b5fbc456360d4bc0fd3708f830bb86c312"
+# public key is 3fed554a9f79975656af858eaceca5a7ab5f8e34ba9323a550f01c9f843a6d80
+
+# Listening port
+port = 1337
+
+# Listening address (0.0.0.0 for all interfaces, 127.0.0.1 for localhost only)
+addr = "0.0.0.0"
+
+# Maximum buffer size per connection in bytes
+# Connections are closed if target sends more than this without client reading
+buffer_max = 1048576  # 1 MB
+
+# Timeout in milliseconds for lambda connections
+# This is how long to wait for a TCP connection to the target
+timeout = 5000  # 5 seconds
+
+# Idle timeout in milliseconds for proxied connections
+# Connections with no activity for this duration are automatically closed
+idle_timeout = 300000  # 5 minutes
+
+# Maximum number of concurrent connections per client public key
+# Prevents resource exhaustion attacks
+connections_per_pkey = 100
+
+# Allow connections to private IP addresses (for local testing only!)
+# When false (default), blocks connections to:
+#   - Loopback (127.0.0.0/8, ::1)
+#   - Private networks (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7)
+#   - Link-local addresses (169.254.0.0/16, fe80::/10)
+#   - Other private ranges
+# WARNING: Only enable for local testing. Never enable in production!
+# Can also be enabled via --allow-private CLI flag
+allow_private = false

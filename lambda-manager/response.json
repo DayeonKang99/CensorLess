@@ -1,0 +1,30 @@
+{
+    "PaginationToken": "",
+    "ResourceTagMappingList": [
+        {
+            "ResourceARN": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488757",
+            "Tags": [
+                {
+                    "Key": "new-lambda-url",
+                    "Value": ""
+                },
+                {
+                    "Key": "FleetID",
+                    "Value": "fleet-4"
+                }
+            ]
+        }
+    ],
+    "ResponseMetadata": {
+        "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "218",
+            "content-type": "application/x-amz-json-1.1",
+            "date": "Sat, 12 Apr 2025 20:12:48 GMT",
+            "x-amzn-requestid": "0a85e585-74ba-4269-ad09-0f4f5dd5f6a3"
+        },
+        "HTTPStatusCode": 200,
+        "RequestId": "0a85e585-74ba-4269-ad09-0f4f5dd5f6a3",
+        "RetryAttempts": 0
+    }
+}

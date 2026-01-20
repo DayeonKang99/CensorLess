@@ -1,0 +1,18 @@
+[package]
+name = "server"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "censorless-server"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true, features = ["cargo", "derive"] }
+protocol = { path = "../protocol" }
+hex.workspace = true
+serde.workspace = true
+tokio = { workspace = true, features = ["sync", "time"] }
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

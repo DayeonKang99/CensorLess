@@ -1,0 +1,162 @@
+Begin Rejuvenation count: 1
+Iteration 1
+Created 1 functions. Remaining functions to create: 0
+Create fleet success with details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488651",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://zqbkejqwn624uk2uu2mkwppmfq0vcyqf.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Time taken to create fleet: 11.956179141998291
+Checking if functions are alive..
+Request was successful
+Response: Updated assignments from ['https://tdmkiocbt3xykrle7thpqqnbgy0narzy.lambda-url.us-west-1.on.aws/'] -> ['https://zqbkejqwn624uk2uu2mkwppmfq0vcyqf.lambda-url.us-west-1.on.aws/'] and sent migration info!
+Sleeping for 10 seconds until next rejuvenation period..
+Begin Rejuvenation count: 2
+Iteration 1
+Created 1 functions. Remaining functions to create: 0
+Create fleet success with details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488674",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://zcdzsvb76ypsw4ipaknzmmasbu0wktgl.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Time taken to create fleet: 11.950621128082275
+Checking if functions are alive..
+Request was successful
+Response: Updated assignments from ['https://zqbkejqwn624uk2uu2mkwppmfq0vcyqf.lambda-url.us-west-1.on.aws/'] -> ['https://zcdzsvb76ypsw4ipaknzmmasbu0wktgl.lambda-url.us-west-1.on.aws/'] and sent migration info!
+Sleeping for 10 seconds until next rejuvenation period..
+Terminating functions from previous rejuvenation period..
+Functions terminated from previous rejuvenation period..
+Concluded Rejuvenation count: 2
+New instance details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488674",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://zcdzsvb76ypsw4ipaknzmmasbu0wktgl.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Begin Rejuvenation count: 3
+Iteration 1
+Created 1 functions. Remaining functions to create: 0
+Create fleet success with details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488702",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://h3mw74uk4moukw5j5pdvn3kula0vueam.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Time taken to create fleet: 11.913111925125122
+Checking if functions are alive..
+Request was successful
+Response: Updated assignments from ['https://zcdzsvb76ypsw4ipaknzmmasbu0wktgl.lambda-url.us-west-1.on.aws/'] -> ['https://h3mw74uk4moukw5j5pdvn3kula0vueam.lambda-url.us-west-1.on.aws/'] and sent migration info!
+Sleeping for 10 seconds until next rejuvenation period..
+Terminating functions from previous rejuvenation period..
+Functions terminated from previous rejuvenation period..
+Concluded Rejuvenation count: 3
+New instance details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488702",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://h3mw74uk4moukw5j5pdvn3kula0vueam.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Begin Rejuvenation count: 4
+Iteration 1
+Created 1 functions. Remaining functions to create: 0
+Create fleet success with details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488729",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://rjquqj6fus2s5a7dwkkfqj4vbi0mqcuz.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Time taken to create fleet: 11.980331182479858
+Checking if functions are alive..
+Request was successful
+Response: Updated assignments from ['https://h3mw74uk4moukw5j5pdvn3kula0vueam.lambda-url.us-west-1.on.aws/'] -> ['https://rjquqj6fus2s5a7dwkkfqj4vbi0mqcuz.lambda-url.us-west-1.on.aws/'] and sent migration info!
+Sleeping for 10 seconds until next rejuvenation period..
+Terminating functions from previous rejuvenation period..
+Functions terminated from previous rejuvenation period..
+Concluded Rejuvenation count: 4
+New instance details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488729",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://rjquqj6fus2s5a7dwkkfqj4vbi0mqcuz.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Begin Rejuvenation count: 5
+Iteration 1
+Created 1 functions. Remaining functions to create: 0
+Create fleet success with details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488757",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://xpotmo5ml27iddygzcgwhmkfxq0rfwpt.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Time taken to create fleet: 11.909750938415527
+Checking if functions are alive..
+Request was successful
+Response: Updated assignments from ['https://rjquqj6fus2s5a7dwkkfqj4vbi0mqcuz.lambda-url.us-west-1.on.aws/'] -> ['https://xpotmo5ml27iddygzcgwhmkfxq0rfwpt.lambda-url.us-west-1.on.aws/'] and sent migration info!
+Sleeping for 10 seconds until next rejuvenation period..
+Terminating functions from previous rejuvenation period..
+Functions terminated from previous rejuvenation period..
+Concluded Rejuvenation count: 5
+New instance details: [
+    [
+        {
+            "FunctionArn": "arn:aws:lambda:us-west-1:221082198449:function:lambdaproxy-1744488757",
+            "FunctionType": [
+                "arm64"
+            ],
+            "FunctionURL": "https://xpotmo5ml27iddygzcgwhmkfxq0rfwpt.lambda-url.us-west-1.on.aws/",
+            "client_session_region": "us-west-1"
+        }
+    ]
+]
+Begin Rejuvenation count: 6
+Iteration 1

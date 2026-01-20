@@ -1,0 +1,13 @@
+{
+    "REJUVENATION_PERIOD" : 30,
+    "INITIAL_EXPERIMENT_INDEX" : 1,
+    "PROXY_COUNT": 1,
+    "MIN_PROXY_COUNT": 3,
+    "MAX_PROXY_COUNT": 7,
+    "controller-IP": "54.91.38.67",
+    "dir": "misc/logs/",
+    "initial_proxy_url": "",
+    "regions": ["us-east-1", "us-east-2"],
+    "batch_size": 20,
+    "wait_time_after_create": 30
+}

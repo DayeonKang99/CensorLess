@@ -1,0 +1,20 @@
+[package]
+name = "client"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "censorless"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true, features = ["cargo", "derive"] }
+hex.workspace = true
+protocol = { path = "../protocol" }
+reqwest.workspace = true
+serde.workspace = true
+socks5-server.workspace = true
+tokio = { workspace = true, features = ["sync", "time"] }
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
