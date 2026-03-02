@@ -2,6 +2,7 @@ target
 .terraform
 .terraform.lock.hcl
 result
+.claude
 CLAUDE.md
 **/.*.sw*
 *.log

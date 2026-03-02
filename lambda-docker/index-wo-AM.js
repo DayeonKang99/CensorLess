@@ -18,7 +18,7 @@ const isAcceptHeaders = new RegExp('^(' + acceptHeaders.join('|') + ')$', 'i');
 // Main Lambda function handler
 exports.handler = awslambda.streamifyResponse(
     async (event, responseStream, context) => {
-        const targetUrl = new URL(event.headers['x-url']);
+        const targetUrl = new URL(event.headers['target-url']);
         console.log(targetUrl);
 
         try {

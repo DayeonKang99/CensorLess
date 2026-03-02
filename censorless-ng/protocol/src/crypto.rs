@@ -29,7 +29,7 @@ pub fn encrypt_payload(recipient_public_key: &[u8; 32], payload: &[u8]) -> Resul
 
     // Generate a random nonce
     let mut nonce_bytes = [0u8; 12];
-    rand::thread_rng().fill_bytes(&mut nonce_bytes);
+    rand::rng().fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
 
     // Encrypt the payload

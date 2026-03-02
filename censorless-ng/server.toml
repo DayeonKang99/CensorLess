@@ -24,7 +24,14 @@ idle_timeout = 300000  # 5 minutes
 
 # Maximum number of concurrent connections per client public key
 # Prevents resource exhaustion attacks
-connections_per_pkey = 100
+connections_per_pkey = 500
+
+# Timeout for reading response from target after writing data (default: 1000)
+# Lower values = faster batch processing, data may arrive on next poll instead
+read_timeout = 200
+
+# Timeout for reading pending data during poll operations (default: 500)
+poll_timeout = 100
 
 # Allow connections to private IP addresses (for local testing only!)
 # When false (default), blocks connections to:

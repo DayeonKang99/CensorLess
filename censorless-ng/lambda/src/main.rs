@@ -220,14 +220,14 @@ async fn handle_request(event: Request) -> Result<Response<Body>, Box<dyn std::e
                 config.read_timeout,
                 response_buf.len()
             );
-            // Return what we have so far
-            if response_buf.is_empty() {
-                return Err(format!(
-                    "Server response timed out after {}ms with no data",
-                    config.read_timeout
-                )
-                .into());
-            }
+            // Always return an error on timeout — partial encrypted data cannot
+            // be decrypted by the client and would cause silent failures.
+            return Err(format!(
+                "Server response timed out after {}ms ({} bytes received)",
+                config.read_timeout,
+                response_buf.len()
+            )
+            .into());
         }
     }
 

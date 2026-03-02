@@ -20,7 +20,7 @@ const debug = {
 
 // hostname
 const hostname = os.hostname();
-let lambda_url = 'https://tdmkiocbt3xykrle7thpqqnbgy0narzy.lambda-url.us-west-1.on.aws/';//'https://cuhyrtn4dveg276x4r3sw6zevq0qknqp.lambda-url.us-east-1.on.aws/';//'https://rev56qp6klxokvrl7xctgsavdq0haihy.lambda-url.us-east-1.on.aws/';//
+let lambda_url = '';//
 
 export interface ProxyServer extends http.Server {
 	authenticate?: (req: http.IncomingMessage) => boolean | Promise<boolean>;
@@ -233,7 +233,7 @@ async function onrequest(
 	// headers['X-hostname'] = parsed.hostname || '';
 	// headers['X-path'] = parsed.path || '';
 	// headers['X-port'] = ((parsed.port == null) || (parsed.port === "80")) ? 443: parsed.port;
-	headers['X-url'] = (req.url || '').replace('http:', 'https:');
+	headers['target-url'] = (req.url || '').replace('http:', 'https:');
 	// console.log(req.url);
 
 	let gotResponse = false;

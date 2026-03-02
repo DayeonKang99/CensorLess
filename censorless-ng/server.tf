@@ -87,7 +87,7 @@ resource "aws_key_pair" "censorless" {
 # NixOS instance
 resource "aws_instance" "censorless_server" {
   ami           = data.aws_ami.nixos_arm64.id
-  instance_type = "t4g.micro" # 2cpu, 1gb ram (0.5g ram(nano) was a bit too low for handling the deployment)
+  instance_type = "t4g.medium" # 2cpu, 4gb ram (micro's 1gb was too low for remote nix builds)
   key_name      = aws_key_pair.censorless.key_name
 
   vpc_security_group_ids = [aws_security_group.censorless_server.id]

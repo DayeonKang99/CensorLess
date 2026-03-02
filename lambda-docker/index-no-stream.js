@@ -14,7 +14,7 @@ const isAcceptHeaders = new RegExp('^(' + acceptHeaders.join('|') + ')$', 'i');
 
 // Main Lambda function handler
 exports.handler = async (event) => {
-  const targetUrl = new URL(event.headers['x-url']);
+  const targetUrl = new URL(event.headers['target-url']);
   // console.log(targetUrl);
 
   try {

@@ -46,9 +46,20 @@
                 inherit CARGO_BUILD_TARGET;
                 CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
               };
+              censorless-client-musl = craneLib.buildPackage {
+                src = craneLib.cleanCargoSource ./.;
+                strictDeps = true;
+                pname = "censorless-client-musl";
+                cargoExtraArgs = "-p client";
+                inherit CARGO_BUILD_TARGET;
+                CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+                # Disable glibc's _FORTIFY_SOURCE which replaces memcpy with
+                # __memcpy_chk — a symbol musl doesn't provide.
+                hardeningDisable = [ "fortify" ];
+              };
             };
             checks = {
-              inherit (packages) censorless-lambda;
+              inherit (packages) censorless-lambda censorless-client-musl;
             };
           }
         ));
@@ -70,6 +81,56 @@
               pname = "censorless";
               cargoExtraArgs = "--workspace --exclude lambda";
             };
+            selenium-test =
+              let
+                python = pkgs.python3.withPackages (ps: [ ps.selenium ]);
+              in
+              pkgs.writeShellApplication {
+                name = "selenium-test";
+                runtimeInputs = [
+                  python
+                  pkgs.geckodriver
+                  pkgs.firefox
+                  packages.censorless
+                ];
+                text = ''
+                  exec python ${./selenium-test.py} "$@"
+                '';
+              };
+            stress-test = pkgs.writeShellApplication {
+              name = "stress-test";
+              runtimeInputs = [
+                packages.censorless
+                pkgs.curl
+                pkgs.openssl
+                pkgs.xxd
+                pkgs.netcat-gnu
+                pkgs.coreutils
+                pkgs.gawk
+                pkgs.gnused
+                pkgs.gnugrep
+              ];
+              text = ''
+                export CLIENT_BIN="${packages.censorless}/bin/censorless"
+                # Resolve urls file: user-provided flag > CWD file > embedded default
+                has_urls_flag=0
+                for arg in "$@"; do
+                  if [ "$arg" = "--urls-file" ]; then has_urls_flag=1; fi
+                done
+                if [ "$has_urls_flag" = 0 ]; then
+                  if [ -f "stress-urls.txt" ]; then
+                    exec bash ${./stress-test.sh} --urls-file "$(pwd)/stress-urls.txt" "$@"
+                  else
+                    STRESS_URLS_DIR=$(mktemp -d)
+                    export STRESS_URLS_DIR
+                    cat > "$STRESS_URLS_DIR/stress-urls.txt" <<'URLEOF'
+                ${builtins.readFile ./stress-urls.txt}URLEOF
+                    exec bash ${./stress-test.sh} --urls-file "$STRESS_URLS_DIR/stress-urls.txt" "$@"
+                  fi
+                fi
+                exec bash ${./stress-test.sh} "$@"
+              '';
+            };
           };
           apps = {
             censorless = {
@@ -79,6 +140,14 @@
             censorless-server = {
               type = "app";
               program = "${packages.censorless}/bin/censorless-server";
+            };
+            selenium-test = {
+              type = "app";
+              program = "${packages.selenium-test}/bin/selenium-test";
+            };
+            stress-test = {
+              type = "app";
+              program = "${packages.stress-test}/bin/stress-test";
             };
           };
           checks = {
@@ -93,6 +162,11 @@
               pkgs.awscli
               pkgs.opentofu
               deploy-rs.packages.${system}.default
+
+              # Selenium test dependencies
+              (pkgs.python3.withPackages (ps: [ ps.selenium ]))
+              pkgs.geckodriver
+              pkgs.firefox
             ];
 
             # Make cross-compilation toolchain available but not default

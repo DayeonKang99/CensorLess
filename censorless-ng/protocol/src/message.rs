@@ -1,5 +1,5 @@
 use crate::{address::SocksAddress, ProtocolError, Result};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read};
 
 const COMPRESSION_THRESHOLD: usize = 128;
 
@@ -250,6 +250,7 @@ pub enum ErrorCode {
     ConnectionRefused = 0x02,
     HostUnreachable = 0x03,
     TooManyConnections = 0x04,
+    InvalidNonce = 0x05,
     Unknown = 0xFF,
 }
 
@@ -260,6 +261,7 @@ impl ErrorCode {
             0x02 => ErrorCode::ConnectionRefused,
             0x03 => ErrorCode::HostUnreachable,
             0x04 => ErrorCode::TooManyConnections,
+            0x05 => ErrorCode::InvalidNonce,
             _ => ErrorCode::Unknown,
         }
     }

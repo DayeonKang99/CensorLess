@@ -1,5 +1,5 @@
 use crate::{ProtocolError, Result};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// SOCKS5 address format

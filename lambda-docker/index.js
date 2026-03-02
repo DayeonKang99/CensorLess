@@ -33,7 +33,7 @@ exports.handler = awslambda.streamifyResponse(
             return
         }
 
-        const targetUrl = new URL(event.headers['x-url']);
+        const targetUrl = new URL(event.headers['target-url']);
         console.log(targetUrl);
 
         try {

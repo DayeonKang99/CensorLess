@@ -4,7 +4,6 @@ use protocol::{
     ErrorCode, ServerResponse, ServerResponseType, SigningKey, SocksAddress,
 };
 use serde::Deserialize;
-use tracing::{debug, error, info, warn};
 use socks5_server::{
     auth::NoAuth,
     connection::state::NeedAuthenticate,
@@ -19,7 +18,7 @@ use std::{
         atomic::{AtomicU64, Ordering},
         Arc,
     },
-    time::Duration,
+    time::{Duration, SystemTime},
 };
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -27,6 +26,7 @@ use tokio::{
     sync::{mpsc, Mutex},
     time::{interval, Instant},
 };
+use tracing::{debug, error, info, warn};
 
 #[derive(Debug, Deserialize, Clone)]
 struct ServerConfig {
@@ -39,6 +39,7 @@ struct ServerConfig {
 struct Config {
     private_key: String,
     lambda: String,
+    #[allow(dead_code)]
     lambda_buffer: usize,
     timeout: u64,
     idle_timeout: u64,
@@ -75,6 +76,9 @@ enum OutgoingMessage {
         server_idx: usize,
         connection_id: u64,
     },
+    Poll {
+        server_idx: usize,
+    },
 }
 
 /// Shared client state
@@ -84,6 +88,7 @@ struct ClientState {
     client_public_key: [u8; 32],
     servers: Vec<ServerState>,
     outgoing_tx: mpsc::UnboundedSender<OutgoingMessage>,
+    http_client: reqwest::Client,
     // Map from (server_idx, connection_id) to connection info
     connections: Arc<Mutex<HashMap<(usize, u64), ConnectionInfo>>>,
 }
@@ -104,6 +109,13 @@ impl ClientState {
         let signing_key = SigningKey::from_bytes(&private_key);
         let client_public_key = signing_key.verifying_key().to_bytes();
 
+        // Use current timestamp as starting nonce so client restarts don't
+        // collide with the server's sliding-window state from previous sessions.
+        let initial_nonce = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
         // Parse server public keys
         let mut servers = Vec::new();
         for server_config in &config.servers {
@@ -116,10 +128,15 @@ impl ClientState {
 
             servers.push(ServerState {
                 config: server_config.clone(),
-                nonce_counter: AtomicU64::new(1),
+                nonce_counter: AtomicU64::new(initial_nonce),
                 server_public_key,
             });
         }
+
+        // Create a reusable HTTP client with connection pooling
+        let http_client = reqwest::Client::builder()
+            .pool_max_idle_per_host(4)
+            .build()?;
 
         Ok(ClientState {
             config,
@@ -127,6 +144,7 @@ impl ClientState {
             client_public_key,
             servers,
             outgoing_tx,
+            http_client,
             connections: Arc::new(Mutex::new(HashMap::new())),
         })
     }
@@ -281,6 +299,11 @@ impl ClientState {
                                     }
                                     Err(e) => {
                                         error!("Error reading from SOCKS: {}", e);
+                                        let _ = outgoing_tx.send(OutgoingMessage::Close {
+                                            server_idx,
+                                            connection_id,
+                                        });
+                                        connections.lock().await.remove(&(server_idx, connection_id));
                                         break;
                                     }
                                 }
@@ -347,7 +370,7 @@ impl ClientState {
         Ok(())
     }
 
-    /// Periodic cleanup task
+    /// Periodic cleanup task - sends Close for idle connections before removing them
     async fn cleanup_task(state: Arc<ClientState>) {
         let mut cleanup_interval = interval(Duration::from_secs(60));
 
@@ -366,15 +389,19 @@ impl ClientState {
                 }
             }
 
-            for key in to_remove {
-                connections.remove(&key);
+            for (server_idx, connection_id) in &to_remove {
+                let _ = state.outgoing_tx.send(OutgoingMessage::Close {
+                    server_idx: *server_idx,
+                    connection_id: *connection_id,
+                });
+                connections.remove(&(*server_idx, *connection_id));
             }
 
             debug!("Cleanup complete");
         }
     }
 
-    /// Periodic poll task - sends poll messages to check for pending data
+    /// Periodic poll task - sends poll messages through the outgoing channel
     async fn poll_task(state: Arc<ClientState>) {
         let mut poll_interval = interval(Duration::from_millis(state.config.timeout / 2));
 
@@ -394,139 +421,259 @@ impl ClientState {
 
             drop(connections);
 
-            // Send poll message to each server with active connections
+            // Send poll through the outgoing channel so nonces stay serialized
             for server_idx in servers_to_poll.keys() {
-                let server_state = &state.servers[*server_idx];
-                let nonce = server_state.nonce_counter.fetch_add(1, Ordering::SeqCst);
-
-                let message = ClientMessage {
-                    client_public_key: state.client_public_key,
-                    nonce,
-                    messages: vec![ClientMessageType::Poll],
-                };
-
-                if let Err(e) = send_to_lambda(&state, *server_idx, message, None).await {
-                    error!("Failed to send poll to lambda: {}", e);
-                }
+                let _ = state.outgoing_tx.send(OutgoingMessage::Poll {
+                    server_idx: *server_idx,
+                });
             }
         }
     }
 }
 
-/// Lambda sender task
+/// Queue a non-StartConnection message into the pending batch.
+fn queue_message(
+    state: &ClientState,
+    pending_messages: &mut HashMap<usize, Vec<ClientMessageType>>,
+    msg: OutgoingMessage,
+) {
+    match msg {
+        OutgoingMessage::Data {
+            server_idx,
+            connection_id,
+            data,
+        } => {
+            let server_config = &state.servers[server_idx].config;
+            let mut server_addr_buf = Vec::new();
+            let server_addr = SocksAddress::Domain(server_config.host.clone());
+            server_addr.encode(&mut server_addr_buf).unwrap();
+
+            let signature = sign_connection_id(
+                &state.signing_key,
+                &server_addr_buf,
+                server_config.port,
+                connection_id,
+            );
+
+            let mut connection_id_signed = Vec::new();
+            connection_id_signed.extend_from_slice(&server_addr_buf);
+            connection_id_signed.extend_from_slice(&server_config.port.to_le_bytes());
+            connection_id_signed.extend_from_slice(&connection_id.to_le_bytes());
+            connection_id_signed.extend_from_slice(&signature);
+
+            pending_messages
+                .entry(server_idx)
+                .or_default()
+                .push(ClientMessageType::Data {
+                    connection_id_signed,
+                    data,
+                    compressed: true,
+                });
+        }
+        OutgoingMessage::Close {
+            server_idx,
+            connection_id,
+        } => {
+            let server_config = &state.servers[server_idx].config;
+            let mut server_addr_buf = Vec::new();
+            let server_addr = SocksAddress::Domain(server_config.host.clone());
+            server_addr.encode(&mut server_addr_buf).unwrap();
+
+            let signature = sign_connection_id(
+                &state.signing_key,
+                &server_addr_buf,
+                server_config.port,
+                connection_id,
+            );
+
+            let mut connection_id_signed = Vec::new();
+            connection_id_signed.extend_from_slice(&server_addr_buf);
+            connection_id_signed.extend_from_slice(&server_config.port.to_le_bytes());
+            connection_id_signed.extend_from_slice(&connection_id.to_le_bytes());
+            connection_id_signed.extend_from_slice(&signature);
+
+            pending_messages
+                .entry(server_idx)
+                .or_default()
+                .push(ClientMessageType::Close {
+                    connection_id_signed,
+                });
+        }
+        OutgoingMessage::Poll { server_idx } => {
+            pending_messages
+                .entry(server_idx)
+                .or_default()
+                .push(ClientMessageType::Poll);
+        }
+        OutgoingMessage::StartConnection { .. } => unreachable!(),
+    }
+}
+
+/// Flush all pending messages to lambda.
+async fn flush_pending(
+    state: &Arc<ClientState>,
+    pending_messages: &mut HashMap<usize, Vec<ClientMessageType>>,
+) {
+    for (server_idx, messages) in pending_messages.drain() {
+        if messages.is_empty() {
+            continue;
+        }
+
+        let server_state = &state.servers[server_idx];
+        let nonce = server_state.nonce_counter.fetch_add(1, Ordering::SeqCst);
+
+        let message = ClientMessage {
+            client_public_key: state.client_public_key,
+            nonce,
+            messages,
+        };
+
+        if let Err(e) = send_to_lambda(state, server_idx, message, None).await {
+            error!("Failed to send to lambda: {}", e);
+        }
+    }
+}
+
+/// Lambda sender task - serializes all outgoing messages through one task.
+///
+/// Strategy: drain all immediately-available messages, then flush.
+/// If more messages keep arriving within `timeout`, batch them together.
+/// This gives low latency for single messages while still batching bursts.
 async fn lambda_sender_task(
     state: Arc<ClientState>,
     mut outgoing_rx: mpsc::UnboundedReceiver<OutgoingMessage>,
 ) {
     let mut pending_messages: HashMap<usize, Vec<ClientMessageType>> = HashMap::new();
-    let mut last_send = Instant::now();
     let timeout_duration = Duration::from_millis(state.config.timeout);
 
-    let mut ticker = interval(Duration::from_millis(100));
-
     loop {
-        tokio::select! {
-            msg = outgoing_rx.recv() => {
-                match msg {
-                    Some(OutgoingMessage::StartConnection { server_idx, host, port, response_tx }) => {
-                        let server_state = &state.servers[server_idx];
-                        let nonce = server_state.nonce_counter.fetch_add(1, Ordering::SeqCst);
+        // Wait for the first message (blocking)
+        let msg = match outgoing_rx.recv().await {
+            Some(msg) => msg,
+            None => {
+                info!("Outgoing channel closed");
+                break;
+            }
+        };
 
-                        let message = ClientMessage {
-                            client_public_key: state.client_public_key,
-                            nonce,
-                            messages: vec![ClientMessageType::StartConnection { host, port }],
-                        };
+        // Handle StartConnection immediately (latency-critical)
+        if matches!(msg, OutgoingMessage::StartConnection { .. }) {
+            if let OutgoingMessage::StartConnection {
+                server_idx,
+                host,
+                port,
+                response_tx,
+            } = msg
+            {
+                let server_state = &state.servers[server_idx];
+                let nonce = server_state.nonce_counter.fetch_add(1, Ordering::SeqCst);
 
-                        // Send immediately and pass response_tx for error handling
-                        if let Err(e) = send_to_lambda(&state, server_idx, message, Some(response_tx)).await {
-                            error!("Failed to send to lambda: {}", e);
+                let message = ClientMessage {
+                    client_public_key: state.client_public_key,
+                    nonce,
+                    messages: vec![ClientMessageType::StartConnection { host, port }],
+                };
+
+                if let Err(e) =
+                    send_to_lambda(&state, server_idx, message, Some(response_tx)).await
+                {
+                    error!("Failed to send to lambda: {}", e);
+                }
+            }
+            continue;
+        }
+
+        // Queue the first non-StartConnection message
+        queue_message(&state, &mut pending_messages, msg);
+
+        // Drain any other immediately-available messages (non-blocking)
+        loop {
+            match outgoing_rx.try_recv() {
+                Ok(msg) => {
+                    if matches!(msg, OutgoingMessage::StartConnection { .. }) {
+                        // Flush pending first, then send StartConnection immediately
+                        flush_pending(&state, &mut pending_messages).await;
+
+                        if let OutgoingMessage::StartConnection {
+                            server_idx,
+                            host,
+                            port,
+                            response_tx,
+                        } = msg
+                        {
+                            let server_state = &state.servers[server_idx];
+                            let nonce =
+                                server_state.nonce_counter.fetch_add(1, Ordering::SeqCst);
+
+                            let message = ClientMessage {
+                                client_public_key: state.client_public_key,
+                                nonce,
+                                messages: vec![ClientMessageType::StartConnection {
+                                    host,
+                                    port,
+                                }],
+                            };
+
+                            if let Err(e) = send_to_lambda(
+                                &state,
+                                server_idx,
+                                message,
+                                Some(response_tx),
+                            )
+                            .await
+                            {
+                                error!("Failed to send to lambda: {}", e);
+                            }
                         }
+                    } else {
+                        queue_message(&state, &mut pending_messages, msg);
                     }
-                    Some(OutgoingMessage::Data { server_idx, connection_id, data }) => {
-                        // Create signed connection ID
-                        let server_config = &state.servers[server_idx].config;
-                        let mut server_addr_buf = Vec::new();
-                        let server_addr = SocksAddress::Domain(server_config.host.clone());
-                        server_addr.encode(&mut server_addr_buf).unwrap();
+                }
+                Err(_) => break, // Channel empty, stop draining
+            }
+        }
 
-                        let signature = sign_connection_id(
-                            &state.signing_key,
-                            &server_addr_buf,
-                            server_config.port,
-                            connection_id,
-                        );
-
-                        let mut connection_id_signed = Vec::new();
-                        connection_id_signed.extend_from_slice(&server_addr_buf);
-                        connection_id_signed.extend_from_slice(&server_config.port.to_le_bytes());
-                        connection_id_signed.extend_from_slice(&connection_id.to_le_bytes());
-                        connection_id_signed.extend_from_slice(&signature);
-
-                        let msg = ClientMessageType::Data {
-                            connection_id_signed,
-                            data,
-                            compressed: true, // Enable compression
-                        };
-
-                        pending_messages.entry(server_idx).or_default().push(msg);
-                    }
-                    Some(OutgoingMessage::Close { server_idx, connection_id }) => {
-                        // Create signed connection ID
-                        let server_config = &state.servers[server_idx].config;
-                        let mut server_addr_buf = Vec::new();
-                        let server_addr = SocksAddress::Domain(server_config.host.clone());
-                        server_addr.encode(&mut server_addr_buf).unwrap();
-
-                        let signature = sign_connection_id(
-                            &state.signing_key,
-                            &server_addr_buf,
-                            server_config.port,
-                            connection_id,
-                        );
-
-                        let mut connection_id_signed = Vec::new();
-                        connection_id_signed.extend_from_slice(&server_addr_buf);
-                        connection_id_signed.extend_from_slice(&server_config.port.to_le_bytes());
-                        connection_id_signed.extend_from_slice(&connection_id.to_le_bytes());
-                        connection_id_signed.extend_from_slice(&signature);
-
-                        let msg = ClientMessageType::Close { connection_id_signed };
-                        pending_messages.entry(server_idx).or_default().push(msg);
-                    }
-                    None => {
-                        info!("Outgoing channel closed");
-                        break;
+        // If we have pending messages, wait briefly for more to batch, then flush
+        if !pending_messages.is_empty() {
+            // Short wait to allow batching of concurrent messages
+            tokio::select! {
+                _ = tokio::time::sleep(timeout_duration) => {
+                    // Timeout expired, flush what we have
+                }
+                msg = outgoing_rx.recv() => {
+                    if let Some(msg) = msg {
+                        if matches!(msg, OutgoingMessage::StartConnection { .. }) {
+                            flush_pending(&state, &mut pending_messages).await;
+                            if let OutgoingMessage::StartConnection { server_idx, host, port, response_tx } = msg {
+                                let server_state = &state.servers[server_idx];
+                                let nonce = server_state.nonce_counter.fetch_add(1, Ordering::SeqCst);
+                                let message = ClientMessage {
+                                    client_public_key: state.client_public_key,
+                                    nonce,
+                                    messages: vec![ClientMessageType::StartConnection { host, port }],
+                                };
+                                if let Err(e) = send_to_lambda(&state, server_idx, message, Some(response_tx)).await {
+                                    error!("Failed to send to lambda: {}", e);
+                                }
+                            }
+                        } else {
+                            queue_message(&state, &mut pending_messages, msg);
+                        }
                     }
                 }
             }
-            _ = ticker.tick() => {
-                // Check if we should flush
-                let should_flush = last_send.elapsed() >= timeout_duration;
 
-                if should_flush && !pending_messages.is_empty() {
-                    for (server_idx, messages) in pending_messages.drain() {
-                        if messages.is_empty() {
-                            continue;
-                        }
-
-                        let server_state = &state.servers[server_idx];
-                        let nonce = server_state.nonce_counter.fetch_add(1, Ordering::SeqCst);
-
-                        let message = ClientMessage {
-                            client_public_key: state.client_public_key,
-                            nonce,
-                            messages,
-                        };
-
-                        if let Err(e) = send_to_lambda(&state, server_idx, message, None).await {
-                            error!("Failed to send to lambda: {}", e);
-                        }
+            // Drain any remaining and flush
+            loop {
+                match outgoing_rx.try_recv() {
+                    Ok(msg) if !matches!(msg, OutgoingMessage::StartConnection { .. }) => {
+                        queue_message(&state, &mut pending_messages, msg);
                     }
-
-                    last_send = Instant::now();
+                    _ => break,
                 }
             }
+
+            flush_pending(&state, &mut pending_messages).await;
         }
     }
 }
@@ -542,7 +689,11 @@ async fn send_to_lambda(
 
     // Serialize and encrypt the message
     let serialized = message.serialize()?;
-    debug!("Serialized message: {} bytes, nonce: {}", serialized.len(), message.nonce);
+    debug!(
+        "Serialized message: {} bytes, nonce: {}",
+        serialized.len(),
+        message.nonce
+    );
     let encrypted = encrypt_payload(server_public_key, &serialized)?;
     debug!("Encrypted to: {} bytes", encrypted.len());
 
@@ -556,11 +707,10 @@ async fn send_to_lambda(
     request_body.extend_from_slice(&encrypted);
 
     debug!("Sending request to lambda ({} bytes)", request_body.len());
-    debug!("First 32 bytes: {:?}", &request_body[..request_body.len().min(32)]);
 
-    // Send HTTP request to lambda
-    let client = reqwest::Client::new();
-    let response = client
+    // Send HTTP request to lambda using the shared client
+    let response = state
+        .http_client
         .post(&state.config.lambda)
         .header("Content-Type", "application/octet-stream")
         .body(request_body)
@@ -569,8 +719,10 @@ async fn send_to_lambda(
 
     let status = response.status();
     if !status.is_success() {
-        // Try to read the error message from the response body
-        let error_body = response.text().await.unwrap_or_else(|_| String::from("(unable to read error body)"));
+        let error_body = response
+            .text()
+            .await
+            .unwrap_or_else(|_| String::from("(unable to read error body)"));
         error!("Lambda HTTP error {}: {}", status, error_body);
         return Err(format!("Lambda returned HTTP {}: {}", status, error_body).into());
     }
@@ -580,13 +732,9 @@ async fn send_to_lambda(
         "Received response from lambda ({} bytes)",
         response_body.len()
     );
-    debug!("First 32 bytes of response: {:?}", &response_body[..response_body.len().min(32)]);
 
-    // Decrypt the response (using public key to match what server encrypted with)
-    debug!("Decrypting response with client public key: {}", hex::encode(&state.client_public_key));
-    debug!("About to decrypt {} bytes", response_body.len());
+    // Decrypt the response
     let decrypted = decrypt_payload(&state.client_public_key, &response_body)?;
-    debug!("Decryption successful");
 
     // Deserialize the response
     let server_response = ServerResponse::deserialize(&decrypted)?;
@@ -598,16 +746,13 @@ async fn send_to_lambda(
 
     for resp in server_response.responses {
         match &resp {
-            ServerResponseType::Challenge { connection_id } => {
+            ServerResponseType::Challenge { .. } => {
                 if let Some(tx) = &response_tx {
-                    // This is a response to a StartConnection
                     let _ = tx.send(resp.clone());
-                    // Connection will be registered when SOCKS handler receives the challenge
-                    return Ok(());
+                    // Don't return early - continue processing remaining responses
                 }
             }
             ServerResponseType::Error { .. } => {
-                // Send error to the response_tx if available (for StartConnection errors)
                 if let Some(tx) = &response_tx {
                     let _ = tx.send(resp.clone());
                 }
@@ -623,6 +768,7 @@ async fn send_to_lambda(
 
     Ok(())
 }
+
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(short, long, default_value = "client.toml")]
@@ -631,15 +777,19 @@ struct Args {
     /// Verbosity level (error, warn, info, debug, trace)
     #[clap(short, long, default_value = "info")]
     verbosity: String,
+
+    /// Address to bind the SOCKS proxy to
+    #[clap(short, long, default_value = "127.0.0.1:1080")]
+    bind: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Parse args
     let args = Args::parse();
 
-    // Initialize tracing with verbosity from args
-    let log_level = args.verbosity.parse::<tracing::Level>()
+    let log_level = args
+        .verbosity
+        .parse::<tracing::Level>()
         .unwrap_or(tracing::Level::INFO);
 
     tracing_subscriber::fmt()
@@ -647,7 +797,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_target(false)
         .without_time()
         .init();
-    // Load config
+
     let config_str = std::fs::read_to_string(args.config)?;
     let config: Config = toml::from_str(&config_str)?;
 
@@ -659,7 +809,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create client state
     let state = Arc::new(ClientState::new(config, outgoing_tx)?);
 
-    info!("Client public key: {}", hex::encode(&state.client_public_key));
+    info!(
+        "Client public key: {}",
+        hex::encode(state.client_public_key)
+    );
 
     // Spawn lambda sender task
     let sender_state = state.clone();
@@ -680,11 +833,41 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // Start SOCKS server
-    let listener = TcpListener::bind("127.0.0.1:1080").await?;
+    let listener = TcpListener::bind(&args.bind).await?;
     let auth = Arc::new(NoAuth) as Arc<_>;
     let server = Server::new(listener, auth);
 
-    info!("SOCKS proxy listening on 127.0.0.1:1080");
+    info!("SOCKS proxy listening on {}", args.bind);
+
+    // Set up graceful shutdown on SIGTERM/SIGINT
+    let shutdown_state = state.clone();
+    tokio::spawn(async move {
+        let mut sigterm =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).unwrap();
+        let sigint = tokio::signal::ctrl_c();
+
+        tokio::select! {
+            _ = sigterm.recv() => info!("Received SIGTERM"),
+            _ = sigint => info!("Received SIGINT"),
+        }
+
+        // Send Close for all active connections
+        let connections = shutdown_state.connections.lock().await;
+        let count = connections.len();
+        if count > 0 {
+            info!("Closing {} active connections...", count);
+            for &(server_idx, connection_id) in connections.keys() {
+                let _ = shutdown_state.outgoing_tx.send(OutgoingMessage::Close {
+                    server_idx,
+                    connection_id,
+                });
+            }
+            drop(connections);
+            // Give the sender a moment to flush
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+        std::process::exit(0);
+    });
 
     while let Ok((conn, _)) = server.accept().await {
         let state = state.clone();

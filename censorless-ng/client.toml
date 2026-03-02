@@ -14,7 +14,7 @@ lambda_buffer = 1048576  # 1 MB
 # Timeout in milliseconds to wait before sending pending data to lambda
 # Lower values = lower latency, higher lambda costs
 # Higher values = better batching, lower costs
-timeout = 1000  # 1 second
+timeout = 100  # 100ms - lower = better latency, more lambda calls
 
 # Idle timeout in milliseconds - close connections after this period of inactivity
 idle_timeout = 300000  # 5 minutes
