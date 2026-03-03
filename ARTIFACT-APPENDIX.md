@@ -129,7 +129,7 @@ Code is available here: <https://github.com/DayeonKang99/CensorLess/tree/main>
 ### Set up the environment 
 
 ```bash
-git clone https://github.com/DayeonKang99/CensorLess.git
+git clone <this repo>
 ```
 
 - CensorLess vanilla mode
