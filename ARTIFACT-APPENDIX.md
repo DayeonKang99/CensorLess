@@ -132,34 +132,34 @@ Code is available here: <https://github.com/DayeonKang99/CensorLess/tree/main>
 git clone https://github.com/DayeonKang99/CensorLess.git
 ```
 
-- CensorLess vanilla mode
-   - serverless-bridge: go to <https://github.com/DayeonKang99/CensorLess/tree/main/censorless-vanilla/serverless-bridge/README.md> 
-   - local-proxy: 
-   - controller: 
-      1. 
-      ```bash
-      sudo docker build -t controller-image -f Dockerfile .
-      sudo docker run -it -p 8000:8000 --cap-add=NET_ADMIN \
-      -e AWS_ACCESS_KEY_ID=<your-access-key> \
-      -e AWS_SECRET_ACCESS_KEY=<your-secret-key> \
-      -e AWS_DEFAULT_REGION=<aws-region> \
-      --name=controller controller-image
-      ```
-      2. go to <http://0.0.0.0:8000/admin> (username: `admintest` and password: `123`)
-      3. Create the following objects:
-         - Create a new Proxy object: set the serverless bridge URL, latitude, and longitude.
-         - Create a new Client object: set the IP of client, latitude, and longitude.
-         - Create a new Assignment object: select the newly created proxy and client object as appropriate.
-   - function-refresher: 
-      1. fill out "initial_proxy_url" and "initial_proxy_arn" of the created serverless bridge in [this set up](https://github.com/DayeonKang99/CensorLess/tree/main/censorless-vanilla/serverless-bridge/README.md)
-      2. ```bash
-         cd censorless-vanilla/function-refresher/
-         conda env create -f environment.yml
-         conda activate function-refresher
-         python3 api.py input-args.json
+   - CensorLess vanilla mode
+      - serverless-bridge: go to <https://github.com/DayeonKang99/CensorLess/tree/main/censorless-vanilla/serverless-bridge/README.md> 
+      - local-proxy: 
+      - controller: 
+         1. 
+         ```bash
+         sudo docker build -t controller-image -f Dockerfile .
+         sudo docker run -it -p 8000:8000 --cap-add=NET_ADMIN \
+         -e AWS_ACCESS_KEY_ID=<your-access-key> \
+         -e AWS_SECRET_ACCESS_KEY=<your-secret-key> \
+         -e AWS_DEFAULT_REGION=<aws-region> \
+         --name=controller controller-image
          ```
-- CensorLess private mode
-   - 
+         2. go to <http://0.0.0.0:8000/admin> (username: `admintest` and password: `123`)
+         3. Create the following objects:
+            - Create a new Proxy object: set the serverless bridge URL, latitude, and longitude.
+            - Create a new Client object: set the IP of client, latitude, and longitude.
+            - Create a new Assignment object: select the newly created proxy and client object as appropriate.
+      - function-refresher: 
+         1. fill out "initial_proxy_url" and "initial_proxy_arn" of the created serverless bridge in [this set up](https://github.com/DayeonKang99/CensorLess/tree/main/censorless-vanilla/serverless-bridge/README.md)
+         2. ```bash
+            cd censorless-vanilla/function-refresher/
+            conda env create -f environment.yml
+            conda activate function-refresher
+            python3 api.py input-args.json
+            ```
+   - CensorLess private mode
+      - 
 
 As a brief test, when you issue the `curl` command, you can see that the local proxy fetches the serverless bridge URL periodically, and your command returned the response. 
 ```bash
