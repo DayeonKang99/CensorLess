@@ -6,8 +6,8 @@
     "MAX_PROXY_COUNT": 7,
     "controller-IP": "127.0.0.1",
     "dir": "misc/logs/",
-    "initial_proxy_url": "https://tdmkiocbt3xykrle7thpqqnbgy0narzy.lambda-url.us-west-1.on.aws/",
-    "initial_proxy_arn": "arn:aws:lambda:us-west-1:221082198449:function:test",
+    "initial_proxy_url": "",
+    "initial_proxy_arn": "",
     "regions": ["us-west-1"],
     "batch_size": 20,
     "wait_time_after_create": 10
