@@ -47,7 +47,6 @@ here but rather in the corresponding submission field on HotCRP.
 - CensorLess vanilla mode
    - Can run on a laptop (No special hardware requirements)
 - CensorLess private mode
-   - 
 
 Replace this with the following:
 
@@ -67,7 +66,6 @@ Replace this with the following:
    - Container: any version of Docker
    - Packages: `pnpm`, AWS CLI, [conda](https://www.anaconda.com/docs/getting-started/miniconda/main#quick-command-line-install)
 - CensorLess private mode
-   - 
 
 Replace this with the software required to run your artifact and its versions,
 as follows.
@@ -160,7 +158,6 @@ git clone https://github.com/DayeonKang99/CensorLess.git
       python3 api.py input-args.json
       ```
 - CensorLess private mode
-   - 
 
 As a brief test, when you issue the `curl` command, you can see that the local proxy fetches the serverless bridge URL periodically, and your command returned the response. 
 ```bash
