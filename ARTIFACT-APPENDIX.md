@@ -103,18 +103,10 @@ as follows.
 
 ### Estimated Time and Storage Consumption 
 
+When setting up this artifact, we expect that it takes less than 5 hours of human time in total. It takes time to set up an AWS account and role. 
 Assuming the CensorLess is evaluated through the provided codes in eval, `censored_domain` testing will take approximately 3 hours for each version, and `pcap_capture_use_cases` will take less than 1 hour for each version.
 It does not consume large disk space (less than 1MB).
 
-
-Replace the following with estimated values for:
-
-- The overall human and compute times required to run the artifact.
-- The overall disk space consumed by the artifact.
-
-This helps reviewers schedule the evaluation in their time plan and others in
-general to see if everything is running as intended. This should also be
-specified at a finer granularity for each experiment (see below).
 
 ## Environment 
 
@@ -160,21 +152,10 @@ git clone https://github.com/DayeonKang99/CensorLess.git
 
 As a brief test, when you issue the `curl` command, you can see that the local proxy fetches the serverless bridge URL periodically, and your command returned the response. 
 ```bash
-curl -x http://localhost:8080 [url]
+curl -x [proxy] [url]
 ```
+[proxy]: `http://localhost:8080` for vanilla, and `<private mode proxy>` for private mode. 
 
-Replace the following by a description of how one should set up the environment
-for your artifact, including downloading and installing dependencies and the
-installation of the artifact itself (i.e., from the very first download or clone
-command one should perform). Be as specific as possible here. If possible, use
-code segments to simplify the workflow, e.g.,
-
-```bash
-git clone git@github.com:PoPETS-AEC/example-docker-python-pip.git
-docker build -t example-docker-python-pip:main .
-```
-
-Describe the expected results where it makes sense to do so.
 
 ### Testing the Environment 
 
@@ -187,35 +168,11 @@ Describe the expected results where it makes sense to do so.
 
 ```bash
 cd eval/censored_domains
-./health_check.sh 50_well_known_blocked_domains.txt <proxy> <outputfile>
+./health_check.sh 50_well_known_blocked_domains.txt <proxy> <outputfile.csv>
 ```
+
 Use `./health_check.sh` to test censorless vanilla, and use `./health_check_v2.sh` to test censorless private mode.
-
-
-
-Replace the following by a description of the basic functionality tests to check
-if the environment is set up correctly. These tests could be unit tests,
-training an ML model on very low training data, etc. If these tests succeed, all
-required software should be functioning correctly. Use code segments to simplify
-the workflow, e.g.,
-
-Launch the Docker container, attach the current working directory (i.e., run
-from the root of the cloned git repository) as a volume, set the context to be
-that volume, and provide an interactive bash terminal:
-
-```bash
-docker run --rm -it -v ${PWD}:/workspaces/example-docker-python-pip \
-    -w /workspaces/example-docker-python-pip \
-    --entrypoint bash example-docker-python-pip:main
-```
-
-Then within the Docker container, run:
-
-```bash
-./test.sh
-```
-
-Include the expected output.
+This test will generate a CSV output file containing the health check results if the test succeeds.
 
 ## Artifact Evaluation 
 
@@ -227,9 +184,9 @@ Include the expected output.
 
 #### Main Result 1: User interaction test in three different use cases
 
-Figure 3: The independent variable is time (seconds) and dependent variable is throughput (Kbps). It shows that CensorLess vanilla mode, regardless of migration, takes a longer time compared to without proxy and private mode in terms of the total execution time, even though the private mode requires more time for receiving the first response due to the secure connection setup process.
+Figure 3: The independent variable is time (seconds), and the dependent variable is throughput (Kbps). It shows that CensorLess vanilla mode, regardless of migration, takes a longer time compared to without proxy and private mode in terms of the total execution time, even though the private mode requires more time for receiving the first response due to the secure connection setup process.
 
-Figure 9: The independent variable is time since first row (seconds) and y-axis presents he destination where the request goes. The vanilla with migration seamlessly handles the client requests even though the bridge migration happened, and private mode requires more time to load the webpage.
+Figure 9: The independent variable is time since the first row (seconds), and the y-axis presents the destination where the request goes. The vanilla with migration seamlessly handles the client requests even though the bridge migration happened, and private mode requires more time to load the webpage.
 
 #### Main Result 2: Website access in censored regions
 
@@ -284,9 +241,9 @@ sudo docker run -it --name=simulation simulation-image
 
 The results can be inspected as follows:
 ```bash
-sudo docker ps --all # Get the CONTAINER ID of the docker container that you ran earlier 
+sudo docker ps --all # Get the CONTAINER ID of the Docker container that you ran earlier 
 sudo docker commit <container-ID> test-commit # Create a new commit based on the current state of the container
-sudo docker run -it test-commit /bin/bash # Access the docker container
+sudo docker run -it test-commit /bin/bash # Access the Docker container
 ls results # Retrieve the required simulation output file within this folder
 ```
 (The censor simulation process is from the SpotProxy artifact.)
