@@ -129,7 +129,7 @@ git clone https://github.com/DayeonKang99/CensorLess.git
 ```
 
 - CensorLess vanilla mode
-   - serverless-bridge: go to <https://github.com/DayeonKang99/CensorLess/tree/main/censorless-vanilla/serverless-bridge/README.md> 
+   - serverless-bridge: follow [this instruction](https://github.com/DayeonKang99/CensorLess/tree/main/censorless-vanilla/serverless-bridge/README.md)
    - local-proxy: 
    - controller: 
       1. 
@@ -147,7 +147,7 @@ git clone https://github.com/DayeonKang99/CensorLess.git
          - Create a new Client object: set the IP of client, latitude, and longitude.
          - Create a new Assignment object: select the newly created proxy and client object as appropriate.
    - function-refresher: 
-      1. fill out "initial_proxy_url" and "initial_proxy_arn" of the created serverless bridge in [this set up](https://github.com/DayeonKang99/CensorLess/tree/main/censorless-vanilla/serverless-bridge/README.md)
+      1. fill out "initial_proxy_url" and "initial_proxy_arn" of the created serverless bridge in [this setup](https://github.com/DayeonKang99/CensorLess/tree/main/censorless-vanilla/serverless-bridge/README.md)
       2. 
       ```bash
       cd censorless-vanilla/function-refresher/
