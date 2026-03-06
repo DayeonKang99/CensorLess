@@ -118,10 +118,6 @@ specified at a finer granularity for each experiment (see below).
 
 ## Environment 
 
-In the following, describe how to access your artifact and all related and
-necessary data and software components. Afterward, describe how to set up
-everything and how to verify that everything is set up correctly.
-
 ### Accessibility 
 
 Code is available here: <https://github.com/DayeonKang99/CensorLess/tree/main>
@@ -223,19 +219,11 @@ Include the expected output.
 
 ## Artifact Evaluation 
 
-This section should include all the steps required to evaluate your artifact's
-functionality and validate your paper's key results and claims. Therefore,
-highlight your paper's main results and claims in the first subsection. And
-describe the experiments that support your claims in the subsection after that.
-
 ### Main Results and Claims
 
 - Figure 3 (throughput graphs in three different use cases) and Figure 9 (waterfall graphs in three different use cases)
 - Tables 1 and 3 (500 website access results)
 - Figures 8 and 12 (censor simulation results)
-
-List all your paper's results and claims that are supported by your submitted
-artifacts.
 
 #### Main Result 1: User interaction test in three different use cases
 
@@ -252,12 +240,6 @@ Our paper claims that both the CensorLess vanilla mode and the private mode rece
 We experimented with a censor simulation framework by measuring the connected user ratio and nonblocked proxy ratio as time goes on, setting the bridge migration period the same as the blocking period and twice the blocking period. CensorLess demonstrates even more stable and higher connectivity across both client and proxy dimensions, even when using less frequent refreshing.
 
 ### Experiments
-List each experiment to execute to reproduce your results. Describe:
- - How to execute it in detailed steps.
- - What the expected result is.
- - How long it takes to execute in human and compute times (approximately).
- - How much space it consumes on disk (approximately) (omit if <10GB).
- - Which claim and results does it support, and how.
 
 #### Experiment 1: User interaction test in three different use cases
 
@@ -274,19 +256,6 @@ Expected output:
 health check results in CSV files
 
 As the censored region, China, currently adopts the censorship strategy that prevents users from receiving content from these websites over time, the TIMEOUT results from a CSV file indicate that the request is censored. Any returned health check results (e.g., 200 (OK), 301 (Moved Permanently), 302 (Moved Temporarily)) show that the client successfully received a response from blocked domains. 
-
-
-- Time: replace with estimate in human-minutes/hours + compute-minutes/hours.
-- Storage: replace with estimate for disk space used (omit if <10GB).
-
-Provide a short explanation of the experiment and expected results. Describe
-thoroughly the steps to perform the experiment and to collect and organize the
-results as expected from your paper (see example below). Use code segments to
-simplify the workflow, as follows.
-
-```bash
-python3 experiment_1.py
-```
 
 #### Experiment 2: Website access in censored regions
 
@@ -329,17 +298,10 @@ Parameters that we used for Figures 8 and 12 can be found in the paper.
 
 ## Limitations 
 
-Describe which steps, experiments, results, graphs, tables, etc. are _not
-reproducible_ with the provided artifact. Explain why this is not
-included/possible and argue why the artifact should _still_ be evaluated for the
-respective badges.
+Since the network does not always show the same traffic patterns, Figures 3, 4, and 9, which present network throughput and content load time, are not reproducible. However, we provided the script of this experiment. Figure 5 and Table 2 are also not reproducible from this artifact because we used the actual experimental logs from our account. Operational cost evaluations, Figures 6 and 7, are cost calculation results based on the assumption that SpotProxy provided, and we used the AWS pricing calculator ([https://calculator.aws/#/]). Our artifact did not provide the calculation results; it is mentioned in the paper in detail.
+
+As our project focused on presenting the actual system for censorship circumvention, we provided the functional source code of our system.
 
 ## Notes on Reusability 
 
-First, this section might not apply to your artifacts. Describe how your
-artifact can be used beyond your research paper, e.g., as a general framework.
-The overall goal of artifact evaluation is not only to reproduce and verify your
-research but also to help other researchers to re-use and extend your artifacts.
-Discuss how your artifacts can be adapted to other settings, e.g., more input
-dimensions, other datasets, and other behavior, through replacing individual
-modules and functionality or running more iterations of a specific module.
+This artifact only targets Amazon AWS, which is one of the biggest cloud providers, but it can be modified and deployed on other cloud platforms, such as Microsoft Azure, Google Cloud Platform, etc. As our system shows the possibility of using serverless functions as a proxy to circumvent the censor, it can be improved in terms of usability and marketability to offer as a service.
