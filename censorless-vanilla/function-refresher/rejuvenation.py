@@ -54,8 +54,23 @@ class Rejuvenator:
         old_urls = []
         new_urls = []
         old_arns = []
-        for function_details in function_list[0]:
-            new_urls.append(function_details['FunctionURL'])
+        # DEBUG: Print the structures
+        print("=" * 80)
+        print("DEBUG: function_list structure:")
+        print(f"  Type: {type(function_list)}")
+        print(f"  Length: {len(function_list)}")
+        print(f"  Content: {function_list}")
+        
+        print("\nDEBUG: function_list_old structure:")
+        print(f"  Type: {type(function_list_old)}")
+        print(f"  Length: {len(function_list_old)}")
+        print(f"  Content: {function_list_old}")
+        print("=" * 80)
+        for batch in function_list:
+            for function_details in batch:
+                new_urls.append(function_details['FunctionURL'])
+        # for function_details in function_list[0]:
+        #     new_urls.append(function_details['FunctionURL'])
             # for url in function_details['FunctionURL']:
             #     new_urls.extend(url[-1])
         if len(function_list_old) != 0:
@@ -66,7 +81,21 @@ class Rejuvenator:
                 #     old_urls.extend(url[-1])
                 # for arn in function_details['FunctionArn']:
                 #     old_arns.extend(url[-1])
-        self.notify_controller(old_urls, old_arns, new_urls)
+        else:
+            # If no old functions, create empty placeholders to match new_urls length
+            old_urls = [""] * len(new_urls)
+            old_arns = [""] * len(new_urls)
+        print(f"old urls: {old_urls}")
+        print(f"new urls: {new_urls}")
+        if len(old_urls) != len(new_urls):
+            for old_url in old_urls:
+                if old_url in new_urls:
+                    new_urls.remove(self.initial_proxy_url)
+            if self.initial_proxy_url in new_urls:
+                new_urls.remove(self.initial_proxy_url)
+            if self.initial_proxy_url in old_urls:
+                old_urls.remove(self.initial_proxy_url)
+        self.notify_controller([old_urls[0]], [old_arns[0]], new_urls)
 
     def notify_controller(self, old_urls, old_arns, new_urls):
         url = "http://{}:8000/assignments/postsingleupdate".format(self.controller_ip)
@@ -248,6 +277,7 @@ class FunctionRejuvenator(Rejuvenator):
         else:
             # Artifact evaluation purposes:
             assert self.PROXY_COUNT == 1, "Initial proxy IP is provided, so the proxy count must be 1."
+
             new_urls = []
             print("function_list_prev:")
             print(function_list_prev)
@@ -255,6 +285,10 @@ class FunctionRejuvenator(Rejuvenator):
                 # for url in function_details['FunctionURL']:
                 #     new_urls.append(url[-1])
                 new_urls.append(function_details['FunctionURL'])
+            if self.initial_proxy_url in new_urls:
+                new_urls.remove(self.initial_proxy_url)
+            print(f"old url:{self.initial_proxy_url}")
+            print(f"new url:{new_urls}")
             self.notify_controller([self.initial_proxy_url], [self.initial_proxy_arn], new_urls)
         
         # Sleep for rej_period:

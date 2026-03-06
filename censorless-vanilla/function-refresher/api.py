@@ -18,6 +18,18 @@ from collections import defaultdict
 
 import rejuvenation
 
+print("AWS_ACCESS_KEY_ID:", os.environ.get('AWS_ACCESS_KEY_ID', 'NOT SET'))
+print("AWS_SECRET_ACCESS_KEY:", os.environ.get('AWS_SECRET_ACCESS_KEY', 'NOT SET')[:5] + '...' if os.environ.get('AWS_SECRET_ACCESS_KEY') else 'NOT SET')
+print("AWS_DEFAULT_REGION:", os.environ.get('AWS_DEFAULT_REGION', 'NOT SET'))
+
+# Try to get credentials
+try:
+    session = boto3.Session()
+    credentials = session.get_credentials()
+    print("Credentials found:", credentials.access_key if credentials else "None")
+except Exception as e:
+    print("Error getting credentials:", e)
+
 US_REGIONS = ['us-west-1'] #'us-east-1', 'us-east-2', 'us-west-1', 'us-west-2']
 clients = {}
 region = US_REGIONS[0]
@@ -468,7 +480,7 @@ def create_initial_fleet_and_periodic_rejuvenation_thread(client, input_args, qu
     
     # Create fleet by batch:
     batch_count = math.ceil(PROXY_COUNT/batch_size)
-    initial_region = "us-east-1" # used for initialization purposes ## do we have to change this..?
+    initial_region = "us-west-1" # used for initialization purposes ## do we have to change this..?
     threads = []
     for i in range(batch_count):
         # if mode == "instance":
