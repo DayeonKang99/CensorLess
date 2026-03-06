@@ -298,7 +298,7 @@ Parameters that we used for Figures 8 and 12 can be found in the paper.
 
 ## Limitations 
 
-Since the network does not always show the same traffic patterns, Figures 3, 4, and 9, which present network throughput and content load time, are not reproducible. However, we provided the script of this experiment. Figure 5 and Table 2 are also not reproducible from this artifact because we used the actual experimental logs from our account. Operational cost evaluations, Figures 6 and 7, are cost calculation results based on the assumption that SpotProxy provided, and we used the AWS pricing calculator ([https://calculator.aws/#/]). Our artifact did not provide the calculation results; it is mentioned in the paper in detail.
+Since the network does not always show the same traffic patterns, Figures 3, 4, and 9, which present network throughput and content load time, are not reproducible. However, we provided the script of this experiment. Figure 5 and Table 2 are also not reproducible from this artifact because we used the actual experimental logs from our account. Operational cost evaluations, Figures 6 and 7, are cost calculation results based on the assumption that SpotProxy provided, and we used the AWS pricing calculator (https://calculator.aws/#/). Our artifact did not provide the calculation results; it is mentioned in the paper in detail.
 
 As our project focused on presenting the actual system for censorship circumvention, we provided the functional source code of our system.
 
